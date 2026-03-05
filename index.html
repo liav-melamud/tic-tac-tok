@@ -3011,7 +3011,14 @@
       <div class="mgrid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;">
         <div class="mcard active" onclick="lm('ai')" id="lm-ai"><span class="mi">🤖</span>מחשב</div>
         <div class="mcard" onclick="lm('friend')" id="lm-fr"><span class="mi">👥</span>חבר ליד</div>
-        <div class="mcard" onclick="lm('online')" id="lm-on"><span class="mi">🌐</span>אונליין</div>
+        <div class="mcard" onclick="lm('online')" id="lm-on" style="position:relative;overflow:hidden;"><span
+            class="mi">🌐</span>אונליין<span
+            style="display:block;font-size:.42rem;letter-spacing:1px;color:rgba(255,102,0,.85);margin-top:2px;">גרסת
+            בטא</span><span
+            style="display:block;font-size:.42rem;letter-spacing:1px;color:rgba(255,51,51,.9);margin-top:1px;">לא
+            עובד</span><span
+            style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3.5rem;font-weight:900;color:rgba(255,30,30,.55);pointer-events:none;line-height:1;">✕</span>
+        </div>
         <div class="mcard bomb-card" onclick="lm('bomb')" id="lm-bm"><span class="mi"><svg width="32" height="32"
               viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
               <ellipse cx="16" cy="17" rx="9" ry="7" fill="#ffe94d" stroke="#b8860b" stroke-width="1.2" />
@@ -3632,7 +3639,7 @@
       });
       peer.on('error', function (err) { bar.className = 'cbar err'; document.getElementById('jbtxt').textContent = '❌ שגיאה: ' + err.type; document.getElementById('jbtn').disabled = false; });
     }
-    function cpCode() { var c = document.getElementById('cdis').textContent; navigator.clipboard.writeText(c).catch(function () { var e = document.createElement('textarea'); e.value = c; document.body.appendChild(e); e.select(); document.execCommand('copy'); document.body.removeChild(e); }); toast('✓ קוד הועתק: ' + c); }
+    function cpCode() { var c = document.getElementById('cdis').textContent; var surl = 'https://liav-melamud.github.io/tic-tac-tok/?room=' + c; navigator.clipboard.writeText(surl).catch(function () { var e = document.createElement('textarea'); e.value = surl; document.body.appendChild(e); e.select(); document.execCommand('copy'); document.body.removeChild(e); }); toast('✓ קישור הועתק!'); }
     function handleMsg(d) {
       switch (d.type) {
         case 'hello': oppName = d.name; if (d.gs) gs = d.gs; launchOnline(); conn.send({ type: 'ready', name: myName }); break;
@@ -3835,7 +3842,7 @@
       var chosen = pairIds[Math.floor(Math.random() * pairIds.length)];
       var idxA = idMap[chosen][0], idxB = idMap[chosen][1];
 
-      var els = document.querySelectorAll('.mem-card');
+      var els = document.querySelectorAll('#mem-grid .mem-card');
       els[idxA].classList.add('flipped');
       els[idxB].classList.add('flipped');
       memState.locked = true;
@@ -3931,7 +3938,7 @@
         if (cardA.id === cardB.id) {
           // MATCH
           setTimeout(function () {
-            var els = document.querySelectorAll('.mem-card');
+            var els = document.querySelectorAll('#mem-grid .mem-card');
             els[a].classList.add('matched');
             els[b].classList.add('matched');
             var checkHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2rem;z-index:5;border-radius:8px;background:rgba(0,232,122,.25);">✅</div>';
@@ -3943,7 +3950,7 @@
             memState.flipped = [];
             memState.locked = false;
             setTimeout(function () {
-              var allCards = document.querySelectorAll('.mem-card');
+              var allCards = document.querySelectorAll('#mem-grid .mem-card');
               if (allCards[a] && allCards[a].parentElement) allCards[a].parentElement.classList.add('gone');
               if (allCards[b] && allCards[b].parentElement) allCards[b].parentElement.classList.add('gone');
             }, 800);
@@ -3955,7 +3962,7 @@
         } else {
           // NO MATCH - flip back
           setTimeout(function () {
-            var els = document.querySelectorAll('.mem-card');
+            var els = document.querySelectorAll('#mem-grid .mem-card');
             els[a].classList.remove('flipped');
             els[b].classList.remove('flipped');
             memState.flipped = [];
@@ -4632,6 +4639,16 @@
       document.getElementById('mem-screen').classList.remove('show');
       document.getElementById('mem-win').classList.remove('show');
     }
+
+    window.addEventListener('DOMContentLoaded', function () {
+      var urlParams = new URLSearchParams(window.location.search);
+      var roomParam = urlParams.get('room');
+      if (roomParam) {
+        lm('online');
+        setTab('j');
+        document.getElementById('jci').value = roomParam;
+      }
+    });
   </script>
 </body>
 
