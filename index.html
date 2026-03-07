@@ -4486,6 +4486,12 @@
     function tugReset() {
       tugStop();
       tugState.pos = 0;
+      tugP1Last = 0;
+      tugP2Last = 0;
+      slipLock1 = false;
+      slipLock2 = false;
+      document.getElementById('tug-btn1').style.filter = 'none';
+      document.getElementById('tug-btn2').style.filter = 'none';
       document.getElementById('tug-status').textContent = 'לחץ התחל!';
       document.getElementById('tug-btn1').style.opacity = '0.4';
       document.getElementById('tug-btn2').style.opacity = '0.4';
@@ -4500,15 +4506,73 @@
       document.getElementById('tug-status').textContent = 'לחצו! A = שחקן 1 | רווח = שחקן 2';
     }
 
+    // Add timestamps for slip logic
+    var tugP1Last = 0;
+    var tugP2Last = 0;
+    var slipLock1 = false;
+    var slipLock2 = false;
+
     function tugPress(player) {
       if (!tugState.running) return;
-      if (player === 1) tugState.pos--;
-      else tugState.pos++;
+      var now = Date.now();
+
+      // Implement slip logic
+      if (player === 1) {
+        if (slipLock1) return; // currently slipping
+        var timeSinceLast = now - tugP1Last;
+        var timeSinceOpponent = now - tugP2Last;
+        tugP1Last = now;
+
+        // If pressing very fast (spamming) AND opponent isn't pulling back (no tension)
+        if (timeSinceLast < 130 && timeSinceOpponent > 500 && timeSinceOpponent !== now) {
+          triggerSlip(1);
+          return;
+        }
+        tugState.pos--;
+      } else {
+        if (slipLock2) return; // currently slipping
+        var timeSinceLast = now - tugP2Last;
+        var timeSinceOpponent = now - tugP1Last;
+        tugP2Last = now;
+
+        if (timeSinceLast < 130 && timeSinceOpponent > 500 && timeSinceOpponent !== now) {
+          triggerSlip(2);
+          return;
+        }
+        tugState.pos++;
+      }
+
       tugDrawRope();
       if (tugState.pos <= -tugState.target) {
         tugEnd(1);
       } else if (tugState.pos >= tugState.target) {
         tugEnd(2);
+      }
+    }
+
+    function triggerSlip(player) {
+      if (player === 1) {
+        slipLock1 = true;
+        document.getElementById('tug-btn1').style.filter = 'brightness(0.5)';
+        toast('⚠️ שחקן 1 החליק!');
+        // Penalty: lose ground
+        tugState.pos = Math.min(tugState.target - 1, tugState.pos + 2);
+        tugDrawRope();
+        setTimeout(function () {
+          slipLock1 = false;
+          document.getElementById('tug-btn1').style.filter = 'none';
+        }, 800);
+      } else {
+        slipLock2 = true;
+        document.getElementById('tug-btn2').style.filter = 'brightness(0.5)';
+        toast('⚠️ שחקן 2 החליק!');
+        // Penalty: lose ground
+        tugState.pos = Math.max(-tugState.target + 1, tugState.pos - 2);
+        tugDrawRope();
+        setTimeout(function () {
+          slipLock2 = false;
+          document.getElementById('tug-btn2').style.filter = 'none';
+        }, 800);
       }
     }
 
