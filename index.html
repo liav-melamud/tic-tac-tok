@@ -4349,17 +4349,25 @@
         }
         cum2 += p.pct;
       });
-      // Convert pct to degrees, pointer at top = 270deg
-      var sliceCenter = (targetOffset / 100) * 360;
+      // The pointer is at 270 degrees (top).
+      // We want `finalAngle + sliceCenter` to end up exactly at 270 degrees relative to 0.
+      var sliceCenterDegrees = (targetOffset / 100) * 360;
       var spins = 5 + Math.floor(Math.random() * 4); // 5-8 full spins
 
       wheelAngle = wheelAngle % 360;
       if (wheelAngle < 0) wheelAngle += 360;
-
       var startAngle = wheelAngle;
-      var finalAngle = (270 - sliceCenter - startAngle) % 360;
-      if (finalAngle < 0) finalAngle += 360;
-      finalAngle += spins * 360;
+
+      // We want to rotate the wheel so that the slice center is at 270 degrees.
+      // So newAngle = 270 - sliceCenterDegrees.
+      var newAngle = (270 - sliceCenterDegrees) % 360;
+      if (newAngle < 0) newAngle += 360;
+
+      // The total rotation we need to add is the difference between newAngle and current startAngle.
+      var rotationDiff = newAngle - startAngle;
+      if (rotationDiff < 0) rotationDiff += 360;
+
+      var finalAngle = rotationDiff + spins * 360;
 
       var duration = 4000 + Math.random() * 1000;
       var start = null;
