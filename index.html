@@ -4348,11 +4348,15 @@
       // Convert pct to degrees, pointer at top = 270deg
       var sliceCenter = (targetOffset / 100) * 360;
       var spins = 5 + Math.floor(Math.random() * 4); // 5-8 full spins
-      var finalAngle = (270 - sliceCenter) % 360;
+
+      wheelAngle = wheelAngle % 360;
+      if (wheelAngle < 0) wheelAngle += 360;
+
+      var startAngle = wheelAngle;
+      var finalAngle = (270 - sliceCenter - startAngle) % 360;
       if (finalAngle < 0) finalAngle += 360;
       finalAngle += spins * 360;
 
-      var startAngle = wheelAngle;
       var duration = 4000 + Math.random() * 1000;
       var start = null;
 
