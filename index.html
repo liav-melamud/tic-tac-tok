@@ -4303,15 +4303,19 @@
       var winner = active[active.length - 1];
       var forced = null;
       if (forcedWheelWinner) {
-        var normalizedForced = forcedWheelWinner.trim();
+        var normalizedForced = forcedWheelWinner.trim().toLowerCase();
         for (var j = 0; j < active.length; j++) {
-          if (active[j].name.trim() === normalizedForced) { forced = active[j]; break; }
+          if (active[j].name.toLowerCase().includes(normalizedForced)) {
+            forced = active[j];
+            break;
+          }
         }
         if (!forced) {
-          // Fallback: If player doesn't exist, we still want to force a visual win for that name
-          // by just temporarily changing the last player's name so they get the result
-          forced = active[0];
-          forced.name = normalizedForced;
+          alert('אדמין: השחקן "' + forcedWheelWinner + '" לא נמצא ברשימה. אנא כתוב את השם במדויק.');
+          forcedWheelWinner = null;
+          wheelSpinning = false;
+          document.getElementById('wheel-spin-btn').disabled = false;
+          return;
         }
       }
 
