@@ -2238,6 +2238,23 @@
       box-shadow: 0 0 15px rgba(255, 215, 0, .5);
     }
 
+    .wheel-admin-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: rgba(255, 233, 77, 0.2);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .wheel-admin-btn:hover {
+      color: rgba(255, 233, 77, 0.8);
+    }
+
     #wheel-screen {
       display: none;
       position: fixed;
@@ -3231,6 +3248,7 @@
 
   <!-- WHEEL SCREEN -->
   <div id="wheel-screen">
+    <button class="wheel-admin-btn" onclick="wheelAdmin()">Admin</button>
     <div class="wheel-title">🎡 גלגל המזל</div>
     <div class="wheel-sub">// כל אחד בוחר את האחוז שלו //</div>
     <div class="wheel-setup" id="wheel-setup">
@@ -4109,12 +4127,21 @@
 
 
     // ═══════════════════════════════════
-    // WHEEL OF FORTUNE
+    // WHEEL OF Fortune
     // ═══════════════════════════════════
     var WHEEL_COLORS = ['#ff4dc4', '#ffe94d', '#00e87a', '#4dc4ff', '#ff6600', '#cc785c', '#ff3366', '#a855f7', '#10b981', '#f59e0b', '#3b82f6', '#ec4899'];
     var wheelPlayers = [];
     var wheelAngle = 0;
     var wheelSpinning = false;
+    var forcedWheelWinner = null;
+
+    function wheelAdmin() {
+      var code = prompt('הכנס קוד:');
+      if (code === '2323') {
+        var w = prompt('שם הזוכה:');
+        forcedWheelWinner = w;
+      }
+    }
 
     function startWheel() {
       document.getElementById('wheel-screen').classList.add('show');
@@ -4270,13 +4297,26 @@
       document.getElementById('wheel-spin-btn').disabled = true;
       document.getElementById('wheel-result').textContent = '';
 
-      // Pick winner weighted by pct
-      var rand = Math.random() * 100;
-      var cum = 0, winner = active[active.length - 1];
-      for (var i = 0; i < active.length; i++) {
-        cum += active[i].pct;
-        if (rand < cum) { winner = active[i]; break; }
+      var winner = active[active.length - 1];
+      var forced = null;
+      if (forcedWheelWinner) {
+        for (var j = 0; j < active.length; j++) {
+          if (active[j].name === forcedWheelWinner) { forced = active[j]; break; }
+        }
       }
+
+      if (forced) {
+        winner = forced;
+      } else {
+        // Pick winner weighted by pct
+        var rand = Math.random() * 100;
+        var cum = 0;
+        for (var i = 0; i < active.length; i++) {
+          cum += active[i].pct;
+          if (rand < cum) { winner = active[i]; break; }
+        }
+      }
+      forcedWheelWinner = null;
 
       // Calculate target angle: pointer is at top (270deg), find winner slice center
       var targetOffset = 0, cum2 = 0;
