@@ -2243,10 +2243,13 @@
       top: 15px;
       left: 15px;
       font-family: 'Share Tech Mono', monospace;
-      font-size: 0.65rem;
-      color: rgba(255, 233, 77, 0.2);
-      background: transparent;
-      border: none;
+      font-size: 0.8rem;
+      color: #000;
+      background: var(--gold);
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 4px;
       cursor: pointer;
       z-index: 100;
     }
@@ -4300,8 +4303,15 @@
       var winner = active[active.length - 1];
       var forced = null;
       if (forcedWheelWinner) {
+        var normalizedForced = forcedWheelWinner.trim();
         for (var j = 0; j < active.length; j++) {
-          if (active[j].name === forcedWheelWinner) { forced = active[j]; break; }
+          if (active[j].name.trim() === normalizedForced) { forced = active[j]; break; }
+        }
+        if (!forced) {
+          // Fallback: If player doesn't exist, we still want to force a visual win for that name
+          // by just temporarily changing the last player's name so they get the result
+          forced = active[0];
+          forced.name = normalizedForced;
         }
       }
 
