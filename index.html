@@ -4137,12 +4137,16 @@
     var wheelAngle = 0;
     var wheelSpinning = false;
     var forcedWheelWinner = null;
+    var forcedWheelMode = 'once'; // 'once' or 'always'
 
     function wheelAdmin() {
       var code = prompt('הכנס קוד:');
       if (code === '2323') {
         var w = prompt('שם הזוכה:');
+        if (!w) return;
         forcedWheelWinner = w;
+        var d = prompt('לכמה זמן אתה רוצה ש"' + w + '" יזכה?\n1 = חד פעמי\n2 = תמיד עד שמשנים');
+        forcedWheelMode = (d === '2') ? 'always' : 'once';
       }
     }
 
@@ -4330,7 +4334,9 @@
           if (rand < cum) { winner = active[i]; break; }
         }
       }
-      forcedWheelWinner = null;
+      if (forcedWheelMode === 'once') {
+        forcedWheelWinner = null;
+      }
 
       // Calculate target angle: pointer is at top (270deg), find winner slice center
       var targetOffset = 0, cum2 = 0;
