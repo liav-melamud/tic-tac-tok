@@ -4330,9 +4330,17 @@
 
       // Calculate target angle: pointer is at top (270deg), find winner slice center
       var targetOffset = 0, cum2 = 0;
-      wheelPlayers.forEach(function (p) {
-        if (!p.pct) return;
-        if (p === winner) {
+      var drawList = active.slice();
+      var totalPct = drawList.reduce(function (s, p) { return s + p.pct; }, 0);
+      var remainder = 100 - totalPct;
+      if (remainder > 0 && drawList.length > 0) {
+        var extra = remainder / drawList.length;
+        drawList = drawList.map(function (p) { return { name: p.name, pct: p.pct + extra, orig: p }; });
+      }
+
+      drawList.forEach(function (p) {
+        var origRef = p.orig || p;
+        if (origRef === winner) {
           targetOffset = cum2 + p.pct / 2;
         }
         cum2 += p.pct;
