@@ -2999,10 +2999,32 @@
       color: rgba(255, 102, 0, .8);
       margin-top: 2px;
     }
+    .admin-btn-corner {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      padding: 5px 10px;
+      background: transparent;
+      color: rgba(255, 233, 77, 0.4);
+      border: 1px solid rgba(255, 233, 77, 0.2);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .admin-btn-corner:hover {
+      color: var(--yellow);
+      border-color: var(--yellow);
+      background: rgba(255, 233, 77, 0.1);
+    }
   </style>
 </head>
 
 <body>
+  <button class="admin-btn-corner" onclick="promptAdmin()">Admin</button>
 
   <!-- LOBBY -->
   <div id="lobby">
@@ -3484,6 +3506,9 @@
   </div>
   <div id="hintbar">
     <button class="hbtn" id="hbtn" onclick="useHint()">💡 רמז</button>
+    <button class="hbtn" id="hbtn-plus" onclick="useAdminHint()"
+      style="display:none; border-color:var(--magenta); color:#fff; background:var(--magenta); text-shadow:0 0 5px #fff; box-shadow:0 0 15px var(--magenta);">💡
+      רמז+</button>
     <span class="hinfo" id="hinfo">3/3 רמזים</span>
     <span class="htimer" id="htimer" style="display:none;"></span>
   </div>
@@ -3510,6 +3535,7 @@
     var sc = { p1: 0, p2: 0, ti: 0 };
     var myName = 'אתה', oppName = 'מחשב', lobM = 'ai';
     var peer = null, conn = null, isHost = false, roomCode = '';
+    var adminInfiniteHints = false, adminSabotaged = false;
 
     // ═══════════════════════════════════
     // PLAYER DATA
@@ -3666,6 +3692,7 @@
         case 'ready': oppName = d.name; toast('🎮 ' + oppName + ' הצטרף!'); break;
         case 'move': applyRemoteMove(d.idx); break;
         case 'reset': gs = d.gs || gs; doRst(); break;
+        case 'sabotage': adminSabotaged = true; toast('⚠️ הרמזים שלך שובשו על ידי האדמין!'); break;
       }
     }
     function launchOnline() { gMode = 'online'; document.getElementById('lobby').classList.add('hidden'); setupUI(); board = Array(gs * gs).fill(null); bldB(); updLbls(); toast('✓ ' + (isHost ? 'תורך X' : 'ממתין ל-X…')); }
@@ -3751,7 +3778,7 @@
     function showW(sym) { document.getElementById('wo').classList.add('show'); var p2 = gMode === 'ai' ? 'מחשב' : oppName; document.getElementById('wi').textContent = 'לוח ' + gs + '×' + gs + (gMode === 'ai' ? ' | ' + getBaseName(diff) : ''); document.getElementById('wi').style.color = gMode === 'ai' ? getDC(diff) : 'rgba(255,233,77,.6)'; var closeBtn = document.querySelector('#wo .btn'); closeBtn.onclick = closeW; if (!sym) { document.getElementById('we').textContent = '⚡'; document.getElementById('wm').textContent = 'תיקו!'; document.getElementById('wm').className = 'wmsg tw'; sc.ti++; document.getElementById('sti').textContent = sc.ti; } else if (sym === mySym) { document.getElementById('we').textContent = '🏆'; document.getElementById('wm').textContent = gMode === 'ai' ? 'ניצחת!' : myName + ' ניצח!'; document.getElementById('wm').className = 'wmsg pw'; sc.p1++; document.getElementById('sp1').textContent = sc.p1; } else { document.getElementById('we').textContent = gMode === 'ai' ? '🤖' : '🎮'; document.getElementById('wm').textContent = gMode === 'ai' ? 'המחשב ניצח!' : p2 + ' ניצח!'; document.getElementById('wm').className = 'wmsg p2w'; sc.p2++; document.getElementById('sp2').textContent = sc.p2; } }
     function closeW() { document.getElementById('wo').classList.remove('show'); if (gMode === 'online' && conn && conn.open) conn.send({ type: 'reset', gs: gs }); doRst(); }
     function resetG(keep) { if (!keep) { sc = { p1: 0, p2: 0, ti: 0 };['sp1', 'sp2', 'sti'].forEach(function (k) { document.getElementById(k).textContent = 0; }); } doRst(); }
-    function doRst() { document.getElementById('wo').classList.remove('show'); active = true; turn = 'X'; bldB(); updLbls(); updHintUI(); updTokenUI(); if (gMode === 'ai' && mySym === 'O') setTimeout(doAI, 600); }
+    function doRst() { document.getElementById('wo').classList.remove('show'); active = true; turn = 'X'; adminInfiniteHints = false; adminSabotaged = false; bldB(); updLbls(); updHintUI(); updTokenUI(); if (gMode === 'ai' && mySym === 'O') setTimeout(doAI, 600); }
 
     // ═══════════════════════════════════
     // TOAST
@@ -3763,10 +3790,13 @@
     // HINTS
     // ═══════════════════════════════════
     var hintTimerInterval = null;
-    function useHint() { if (!active || gMode !== 'ai' || turn !== mySym) return; var p = loadPlayer(myName); if (p.hints <= 0) { toast('אין רמזים! קנה עוד 🪙'); return; } if (!p.hintWindowStart) { p.hintWindowStart = Date.now(); startHintTimer(); } var best = findBestForPlayer(); if (best === -1) return; var cs = document.querySelectorAll('.cell'); cs[best].classList.add('hcell'); setTimeout(function () { cs[best].classList.remove('hcell'); }, 2000); p.hints--; savePlayer(myName, p); updHintUI(); updTokenUI(); }
+    function getHintMove() { if (adminSabotaged) { var empty = []; for (var i = 0; i < board.length; i++) { if (!board[i]) empty.push(i); } if (empty.length > 0) return empty[Math.floor(Math.random() * empty.length)]; return -1; } return findBestForPlayer(); }
+    function useHint() { if (!active || turn !== mySym) return; var p = loadPlayer(myName); if (p.hints <= 0) { toast('אין רמזים! קנה עוד 🪙'); return; } if (!p.hintWindowStart) { p.hintWindowStart = Date.now(); startHintTimer(); } var best = getHintMove(); if (best === -1) return; var cs = document.querySelectorAll('.cell'); cs[best].classList.add('hcell'); setTimeout(function () { cs[best].classList.remove('hcell'); }, 2000); p.hints--; savePlayer(myName, p); updHintUI(); updTokenUI(); }
+    function useAdminHint() { if (!active || turn !== mySym) return; var best = getHintMove(); if (best === -1) return; var cs = document.querySelectorAll('.cell'); cs[best].classList.add('hcell'); setTimeout(function () { cs[best].classList.remove('hcell'); }, 2000); }
+    function promptAdmin() { var code = prompt('הכנס קוד אדמין:'); if (code === '2323') { adminInfiniteHints = true; updHintUI(); toast('👑 הופעל מצב רמז+ ללא הגבלה!'); } else if (code === '3232') { if (gMode === 'online' && conn && conn.open) { conn.send({ type: 'sabotage' }); toast('😈 שלחת שיבוש רמזים ליריב!'); } else { toast('❌ קוד זה פעיל רק במשחק אונליין'); } } else if (code) { toast('❌ קוד שגוי'); } }
     function findBestForPlayer() { var oA = aiSym, oM = mySym; aiSym = mySym; mySym = oA; var dep = Math.min(3, gs <= 3 ? 8 : gs <= 4 ? 4 : 2), es = emp().sort(function (a, b) { return ss(b) - ss(a); }).slice(0, 10), bs = -Infinity, bm = -1; for (var i = 0; i < es.length; i++) { board[es[i]] = aiSym; var s = mnx(0, false, -Infinity, Infinity, dep); board[es[i]] = null; if (s > bs) { bs = s; bm = es[i]; } } aiSym = oA; mySym = oM; return bm !== -1 ? bm : rnd(); }
     function startHintTimer() { if (hintTimerInterval) clearInterval(hintTimerInterval); hintTimerInterval = setInterval(function () { var p = loadPlayer(myName); if (!p.hintWindowStart) { clearInterval(hintTimerInterval); return; } var rem = 3600000 - (Date.now() - p.hintWindowStart); if (rem <= 0) { p.hints = 3; p.hintWindowStart = null; savePlayer(myName, p); clearInterval(hintTimerInterval); hintTimerInterval = null; document.getElementById('htimer').style.display = 'none'; updHintUI(); updTokenUI(); toast('💡 רמזים התחדשו!'); } else { var m = Math.floor(rem / 60000), s = Math.floor((rem % 60000) / 1000); var el = document.getElementById('htimer'); el.style.display = 'inline'; el.textContent = '⏱ ' + m + ':' + String(s).padStart(2, '0'); } }, 1000); }
-    function updHintUI() { var p = loadPlayer(myName); document.getElementById('hinfo').textContent = p.hints + '/3 רמזים'; document.getElementById('hbtn').textContent = p.hints <= 0 ? '💡 אין רמזים' : '💡 רמז'; document.getElementById('hbtn').disabled = (p.hints <= 0); if (!p.hintWindowStart) document.getElementById('htimer').style.display = 'none'; var show = gMode === 'ai' && active; document.getElementById('hintbar').style.display = show ? 'flex' : 'none'; document.getElementById('tokenbar').style.display = show ? 'flex' : 'none'; }
+    function updHintUI() { var p = loadPlayer(myName); document.getElementById('hinfo').textContent = p.hints + '/3 רמזים'; document.getElementById('hbtn').textContent = p.hints <= 0 ? '💡 אין רמזים' : '💡 רמז'; document.getElementById('hbtn').disabled = (p.hints <= 0); if (!p.hintWindowStart) document.getElementById('htimer').style.display = 'none'; var show = active && (gMode === 'ai' || gMode === 'online'); document.getElementById('hintbar').style.display = show ? 'flex' : 'none'; document.getElementById('tokenbar').style.display = show ? 'flex' : 'none'; if (adminInfiniteHints) { document.getElementById('hbtn').style.display = 'none'; document.getElementById('hinfo').style.display = 'none'; document.getElementById('htimer').style.display = 'none'; document.getElementById('tkbtn').style.display = 'none'; document.getElementById('hbtn-plus').style.display = 'inline-block'; } else { document.getElementById('hbtn').style.display = 'inline-block'; document.getElementById('hinfo').style.display = 'inline-block'; document.getElementById('tkbtn').style.display = 'inline-block'; document.getElementById('hbtn-plus').style.display = 'none'; } }
     function updTokenUI() { var p = loadPlayer(myName); document.getElementById('tkcount').textContent = p.tokens; document.getElementById('tkbtn').disabled = (p.tokens <= 0 || p.hints >= 3); }
     function buyHints() { var p = loadPlayer(myName); if (p.tokens <= 0) { toast('❌ אין טוקנים! מתחדשים כל חודש'); return; } if (p.hints >= 3) { toast('יש לך כבר 3 רמזים!'); return; } p.tokens--; p.hints = 3; p.hintWindowStart = null; if (hintTimerInterval) { clearInterval(hintTimerInterval); hintTimerInterval = null; } document.getElementById('htimer').style.display = 'none'; savePlayer(myName, p); updHintUI(); updTokenUI(); toast('✓ קנית 3 רמזים! נותרו ' + p.tokens + ' טוקנים 🪙'); }
 
